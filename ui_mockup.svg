@@ -1,0 +1,92 @@
+<svg width="800" height="900" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="800" height="900" fill="#f8f9fa"/>
+  
+  <!-- 主容器 -->
+  <rect x="40" y="40" width="720" height="820" rx="12" fill="white" stroke="#e9ecef" stroke-width="1"/>
+  
+  <!-- 标题 -->
+  <text x="400" y="80" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#2c3e50">iFinance - 智能金融数据查询系统</text>
+  
+  <!-- 搜索区域 -->
+  <text x="80" y="130" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#34495e">🔍 股票搜索</text>
+  <rect x="80" y="140" width="400" height="40" rx="6" fill="#ffffff" stroke="#bdc3c7" stroke-width="1"/>
+  <text x="90" y="162" font-family="Arial, sans-serif" font-size="14" fill="#7f8c8d">输入股票代码或公司名称...</text>
+  <rect x="500" y="140" width="80" height="40" rx="6" fill="#3498db" stroke="none"/>
+  <text x="540" y="162" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">搜索</text>
+  
+  <!-- 股票信息卡片 -->
+  <text x="80" y="220" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#34495e">📊 选中股票信息</text>
+  <rect x="80" y="230" width="640" height="120" rx="8" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="1"/>
+  
+  <!-- 股票名称行 -->
+  <text x="100" y="255" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#2c3e50">AAPL - Apple Inc.</text>
+  <text x="650" y="255" font-family="Arial, sans-serif" font-size="14" fill="#7f8c8d">🇺🇸 美国</text>
+  
+  <!-- 分隔线 -->
+  <line x1="100" y1="265" x2="700" y2="265" stroke="#bdc3c7" stroke-width="1"/>
+  
+  <!-- 详细信息行 -->
+  <text x="100" y="285" font-family="Arial, sans-serif" font-size="14" fill="#34495e">📈 股票 (Equity)</text>
+  <text x="250" y="285" font-family="Arial, sans-serif" font-size="14" fill="#34495e">💰 USD</text>
+  <text x="350" y="285" font-family="Arial, sans-serif" font-size="14" fill="#34495e">🕐 09:30-16:00 (UTC-05)</text>
+  
+  <!-- 市场状态 -->
+  <circle cx="110" cy="310" r="6" fill="#27ae60"/>
+  <text x="125" y="315" font-family="Arial, sans-serif" font-size="14" fill="#27ae60" font-weight="bold">开市中</text>
+  <text x="200" y="315" font-family="Arial, sans-serif" font-size="14" fill="#7f8c8d">🏛️ 纳斯达克全球精选市场</text>
+  
+  <!-- 交易时间提示 -->
+  <text x="100" y="335" font-family="Arial, sans-serif" font-size="12" fill="#95a5a6">距离闭市还有 2小时30分钟</text>
+  
+  <!-- 日期选择 -->
+  <text x="80" y="390" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#34495e">📅 日期选择</text>
+  <rect x="80" y="400" width="200" height="40" rx="6" fill="#ffffff" stroke="#bdc3c7" stroke-width="1"/>
+  <text x="90" y="422" font-family="Arial, sans-serif" font-size="14" fill="#2c3e50">2024-01-15</text>
+  <text x="260" y="422" font-family="Arial, sans-serif" font-size="14" fill="#7f8c8d">▼</text>
+  
+  <!-- 获取数据按钮 -->
+  <rect x="300" y="400" width="100" height="40" rx="6" fill="#e74c3c" stroke="none"/>
+  <text x="350" y="422" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">获取数据</text>
+  
+  <!-- OHLCV数据展示 -->
+  <text x="80" y="480" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#34495e">💹 OHLCV数据展示</text>
+  <rect x="80" y="490" width="640" height="320" rx="8" fill="#ffffff" stroke="#bdc3c7" stroke-width="1"/>
+  
+  <!-- OHLCV标题 -->
+  <text x="400" y="520" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#2c3e50">AAPL - 2024-01-15 OHLCV数据</text>
+  
+  <!-- 第一行：开盘价和收盘价 -->
+  <rect x="110" y="540" width="140" height="80" rx="6" fill="#ecf0f1" stroke="none"/>
+  <text x="180" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34495e">开盘价 (Open)</text>
+  <text x="180" y="585" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#3498db">$185.50</text>
+  
+  <rect x="270" y="540" width="140" height="80" rx="6" fill="#ecf0f1" stroke="none"/>
+  <text x="340" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34495e">收盘价 (Close)</text>
+  <text x="340" y="585" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#e74c3c">$188.63</text>
+  
+  <!-- 第二行：最高价和最低价 -->
+  <rect x="110" y="640" width="140" height="80" rx="6" fill="#ecf0f1" stroke="none"/>
+  <text x="180" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34495e">最高价 (High)</text>
+  <text x="180" y="685" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#e74c3c">$189.12</text>
+  
+  <rect x="270" y="640" width="140" height="80" rx="6" fill="#ecf0f1" stroke="none"/>
+  <text x="340" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34495e">最低价 (Low)</text>
+  <text x="340" y="685" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#27ae60">$184.33</text>
+  
+  <!-- 成交量 -->
+  <rect x="430" y="540" width="260" height="80" rx="6" fill="#ecf0f1" stroke="none"/>
+  <text x="560" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34495e">成交量 (Volume)</text>
+  <text x="560" y="585" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#9b59b6">45,123,456</text>
+  
+  <!-- 涨跌信息 -->
+  <rect x="430" y="640" width="260" height="80" rx="6" fill="#ecf0f1" stroke="none"/>
+  <text x="560" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#34495e">日内涨跌</text>
+  <text x="510" y="685" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#e74c3c">+$3.13</text>
+  <text x="610" y="685" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#e74c3c">+1.69%</text>
+  
+  <!-- 底部信息栏 -->
+  <rect x="80" y="830" width="640" height="40" rx="6" fill="#f8f9fa" stroke="#e9ecef" stroke-width="1"/>
+  <text x="100" y="852" font-family="Arial, sans-serif" font-size="12" fill="#6c757d">💡 提示：数据来源于Alpha Vantage API，显示货币为股票所在市场的本币</text>
+  
+</svg>

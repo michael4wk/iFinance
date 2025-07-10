@@ -3,7 +3,9 @@
 
 import dash
 from dash import dcc, html, Input, Output, State, callback_context
-from datetime import datetime, timedelta
+import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime, date
 import pandas as pd
 import dash_mantine_components as dmc
 
@@ -11,7 +13,7 @@ from ..api.alpha_vantage import AlphaVantageClient
 from ..data.processor import DataProcessor
 from ..data.validator import DataValidator
 from ..utils.logger import get_logger
-from ..utils.exceptions import APIError, DataValidationError
+from ..utils.exceptions import APIError, DataProcessingError
 
 # 获取日志记录器
 logger = get_logger(__name__)
@@ -52,6 +54,8 @@ def create_layout() -> html.Div:
         html.Div: 应用布局组件
     """
     return dmc.MantineProvider([
+        # 存储选中股票的详细信息
+        dcc.Store(id="selected-stock-info", data={}),
         html.Div([
         # 页面标题和头部
         html.Div([
@@ -119,6 +123,9 @@ def create_layout() -> html.Div:
                             style={'width': '100%'}
                         )
                     ], style={'marginBottom': '20px', 'width': '100%'}),
+                    
+                    # 股票信息卡片
+                    html.Div(id="stock-info-card", style={'marginBottom': '20px'}),
                     
                     # 日期选择器区域
                     html.Label("选择查询日期:", style={'fontWeight': 'bold', 'marginBottom': '10px', 'display': 'block'}),
@@ -215,16 +222,17 @@ def register_callbacks(app: dash.Dash) -> None:
     
     @app.callback(
         [Output('stock-dropdown', 'options'),
-         Output('stock-dropdown', 'value')],
+         Output('stock-dropdown', 'value'),
+         Output('selected-stock-info', 'data')],
         [Input('search-button', 'n_clicks')],
         [State('stock-search-input', 'value')]
     )
     def update_stock_dropdown(n_clicks, search_value):
         """
-        更新股票下拉选择框
+        更新股票下拉选择框并存储搜索结果
         """
         if n_clicks == 0 or not search_value:
-            return [], None
+            return [], None, {}
         
         try:
             # 验证搜索关键词
@@ -236,23 +244,26 @@ def register_callbacks(app: dash.Dash) -> None:
             # 处理搜索结果
             processed_results = data_processor.process_symbol_search_results(search_results)
             
-            # 生成下拉选项
-            options = [
-                {
+            # 生成下拉选项和股票信息映射
+            options = []
+            stock_info_map = {}
+            
+            for result in processed_results[:10]:  # 限制显示前10个结果
+                options.append({
                     'label': result['display_label'],
                     'value': result['symbol']
-                }
-                for result in processed_results[:10]  # 限制显示前10个结果
-            ]
+                })
+                # 存储完整的股票信息
+                stock_info_map[result['symbol']] = result
             
             # 自动选择第一个结果
             default_value = options[0]['value'] if options else None
             
-            return options, default_value
+            return options, default_value, stock_info_map
             
         except Exception as e:
             logger.error(f"Stock search failed: {str(e)}")
-            return [], None
+            return [], None, {}
     
     @app.callback(
         Output('fetch-data-button', 'disabled'),
@@ -264,15 +275,34 @@ def register_callbacks(app: dash.Dash) -> None:
         """
         return selected_stock is None
     
+    @app.callback(
+        Output('stock-info-card', 'children'),
+        [Input('stock-dropdown', 'value')],
+        [State('selected-stock-info', 'data')]
+    )
+    def update_stock_info_display(selected_stock, stock_info_data):
+        """
+        更新股票信息卡片显示
+        """
+        if not selected_stock or not stock_info_data:
+            return html.Div()
+        
+        stock_info = stock_info_data.get(selected_stock, {})
+        if not stock_info:
+            return html.Div()
+        
+        return create_stock_info_card(stock_info)
+    
 
     
     @app.callback(
         Output('data-display', 'children'),
         [Input('fetch-data-button', 'n_clicks')],
         [State('stock-dropdown', 'value'),
-         State('date-picker', 'value')]
+         State('date-picker', 'value'),
+         State('selected-stock-info', 'data')]
     )
-    def update_stock_data(n_clicks, selected_stock, selected_date):
+    def update_stock_data(n_clicks, selected_stock, selected_date, stock_info_data):
         """
         更新股票OHLCV数据显示
         """
@@ -281,11 +311,40 @@ def register_callbacks(app: dash.Dash) -> None:
         
         
         try:
-            # 获取日线数据
-            daily_data = api_client.get_daily_data(selected_stock, 'compact')
+            # 智能选择输出大小：根据选择的日期决定使用compact还是full
+            from datetime import datetime, timedelta
             
-            # 处理数据
-            df = data_processor.process_daily_data(daily_data, days_limit=100)
+            # 计算选择日期距今的天数
+            if selected_date:
+                target_date = pd.to_datetime(selected_date)
+                days_diff = (datetime.now() - target_date).days
+                
+                # 如果选择的日期超过80天前，使用full模式获取完整历史数据
+                if days_diff > 80:
+                    output_size = 'full'
+                    logger.info(f"选择日期距今{days_diff}天，使用full模式获取完整历史数据")
+                else:
+                    output_size = 'compact'
+                    logger.info(f"选择日期距今{days_diff}天，使用compact模式获取近期数据")
+            else:
+                # 未选择日期时，默认使用compact模式
+                output_size = 'compact'
+                logger.info("未选择日期，使用compact模式获取近期数据")
+            
+            # 获取日线数据
+            daily_data = api_client.get_daily_data(selected_stock, output_size)
+            
+            # 处理数据：当使用full模式时不限制天数，compact模式时限制100天
+            days_limit = None if output_size == 'full' else 100
+            df = data_processor.process_daily_data(daily_data, days_limit=days_limit)
+            
+            # 获取货币符号
+            currency_symbol = '$'  # 默认美元符号
+            if stock_info_data and selected_stock in stock_info_data:
+                stock_info = stock_info_data[selected_stock]
+                currency_symbol = data_processor.get_currency_symbol(
+                    stock_info.get('currency', 'USD')
+                )
             
             # 检查是否选择了日期
             if selected_date is not None:
@@ -296,7 +355,7 @@ def register_callbacks(app: dash.Dash) -> None:
                     # 找到指定日期的数据
                     day_data = df[df.index.strftime('%Y-%m-%d') == target_date].iloc[0]
                     
-                    return create_ohlcv_display(selected_stock, target_date, day_data)
+                    return create_ohlcv_display(selected_stock, target_date, day_data, currency_symbol)
                 else:
                     # 没有找到指定日期的数据，显示最近的数据
                     latest_data = df.iloc[0]
@@ -313,7 +372,7 @@ def register_callbacks(app: dash.Dash) -> None:
                             'border': '1px solid #f1c40f',
                             'marginBottom': '20px'
                         }),
-                        create_ohlcv_display(selected_stock, latest_date, latest_data)
+                        create_ohlcv_display(selected_stock, latest_date, latest_data, currency_symbol)
                     ])
             else:
                 # 没有选择日期，显示最近的数据
@@ -331,7 +390,7 @@ def register_callbacks(app: dash.Dash) -> None:
                         'border': '1px solid #3498db',
                         'marginBottom': '20px'
                     }),
-                    create_ohlcv_display(selected_stock, latest_date, latest_data)
+                    create_ohlcv_display(selected_stock, latest_date, latest_data, currency_symbol)
                 ])
                 
         except Exception as e:
@@ -341,7 +400,7 @@ def register_callbacks(app: dash.Dash) -> None:
     logger.info("Application callbacks registered successfully")
 
 
-def create_ohlcv_display(symbol: str, date: str, data: pd.Series) -> html.Div:
+def create_ohlcv_display(symbol: str, date: str, data: pd.Series, currency_symbol: str = '$') -> html.Div:
     """
     创建OHLCV数据显示卡片
     """
@@ -369,7 +428,7 @@ def create_ohlcv_display(symbol: str, date: str, data: pd.Series) -> html.Div:
             html.Div([
                 html.Div([
                     html.H4("开盘价 (Open)", style={'color': '#34495e', 'marginBottom': '10px'}),
-                    html.H2(f"${data.get('open', 0):.2f}", style={'color': '#3498db', 'margin': '0'})
+                    html.H2(f"{currency_symbol}{data.get('open', 0):.2f}", style={'color': '#3498db', 'margin': '0'})
                 ], style={
                     'backgroundColor': '#ecf0f1',
                     'padding': '20px',
@@ -381,7 +440,7 @@ def create_ohlcv_display(symbol: str, date: str, data: pd.Series) -> html.Div:
                 }),
                 html.Div([
                     html.H4("收盘价 (Close)", style={'color': '#34495e', 'marginBottom': '10px'}),
-                    html.H2(f"${data.get('close', 0):.2f}", style={'color': change_color, 'margin': '0'})
+                    html.H2(f"{currency_symbol}{data.get('close', 0):.2f}", style={'color': change_color, 'margin': '0'})
                 ], style={
                     'backgroundColor': '#ecf0f1',
                     'padding': '20px',
@@ -396,7 +455,7 @@ def create_ohlcv_display(symbol: str, date: str, data: pd.Series) -> html.Div:
             html.Div([
                 html.Div([
                     html.H4("最高价 (High)", style={'color': '#34495e', 'marginBottom': '10px'}),
-                    html.H2(f"${data.get('high', 0):.2f}", style={'color': '#e74c3c', 'margin': '0'})  # 最高价用红色
+                    html.H2(f"{currency_symbol}{data.get('high', 0):.2f}", style={'color': '#e74c3c', 'margin': '0'})  # 最高价用红色
                 ], style={
                     'backgroundColor': '#ecf0f1',
                     'padding': '20px',
@@ -408,7 +467,7 @@ def create_ohlcv_display(symbol: str, date: str, data: pd.Series) -> html.Div:
                 }),
                 html.Div([
                     html.H4("最低价 (Low)", style={'color': '#34495e', 'marginBottom': '10px'}),
-                    html.H2(f"${data.get('low', 0):.2f}", style={'color': '#27ae60', 'margin': '0'})  # 最低价用绿色
+                    html.H2(f"{currency_symbol}{data.get('low', 0):.2f}", style={'color': '#27ae60', 'margin': '0'})  # 最低价用绿色
                 ], style={
                     'backgroundColor': '#ecf0f1',
                     'padding': '20px',
@@ -458,6 +517,36 @@ def create_ohlcv_display(symbol: str, date: str, data: pd.Series) -> html.Div:
                 'backgroundColor': '#ecf0f1',
                 'padding': '20px',
                 'borderRadius': '8px'
+            }),
+            
+            # 数据源说明
+            html.Div([
+                html.H4("📋 数据源说明", style={'color': '#34495e', 'marginBottom': '15px', 'textAlign': 'center'}),
+                html.Div([
+                    html.P([
+                        "📊 数据来源: ",
+                        html.Strong("Alpha Vantage API", style={'color': '#3498db'}),
+                        " (免费版)"
+                    ], style={'margin': '8px 0', 'fontSize': '14px'}),
+                    html.P([
+                        "💰 价格类型: ",
+                        html.Strong("原始交易价格", style={'color': '#e67e22'}),
+                        " (未调整)"
+                    ], style={'margin': '8px 0 12px 0', 'fontSize': '14px'}),
+                    html.P([
+                        "📖 了解更多关于数据差异的原因，请参考 ",
+                        html.A("Alpha Vantage官方文档", 
+                               href="https://www.alphavantage.co/documentation/", 
+                               target="_blank",
+                               style={'color': '#3498db', 'textDecoration': 'underline'})
+                    ], style={'margin': '8px 0', 'fontSize': '12px', 'color': '#7f8c8d'})
+                ])
+            ], style={
+                'backgroundColor': '#f8f9fa',
+                'padding': '15px',
+                'borderRadius': '8px',
+                'border': '1px solid #dee2e6',
+                'marginTop': '15px'
             })
         ])
     ], style={
@@ -469,6 +558,100 @@ def create_ohlcv_display(symbol: str, date: str, data: pd.Series) -> html.Div:
         'margin': '0 auto'
     })
 
+
+def create_stock_info_card(stock_info):
+    """
+    创建股票信息展示卡片
+    
+    Args:
+        stock_info: 包含股票详细信息的字典
+        
+    Returns:
+        html.Div: 股票信息展示组件
+    """
+    if not stock_info:
+        return html.Div()
+    
+    # 获取市场状态颜色
+    status_colors = {
+        'open': '#27ae60',
+        'closed': '#e74c3c',
+        'pre_market': '#f39c12',
+        'after_hours': '#f39c12',
+        'unknown': '#95a5a6'
+    }
+    status_color = status_colors.get(stock_info.get('market_status', {}).get('status', 'unknown'), '#95a5a6')
+    
+    return html.Div([
+        html.H3("📊 选中股票信息", style={
+            'color': '#2c3e50',
+            'marginBottom': '15px',
+            'fontSize': '18px'
+        }),
+        html.Div([
+            # 股票名称和基本信息
+            html.Div([
+                html.H4(f"{stock_info.get('symbol', '')} - {stock_info.get('name', '')}", style={
+                    'color': '#2c3e50',
+                    'margin': '0 0 10px 0',
+                    'fontSize': '16px',
+                    'fontWeight': 'bold'
+                }),
+                html.Div([
+                    html.Span(f"🌍 {stock_info.get('region', '')}", style={
+                        'backgroundColor': '#3498db',
+                        'color': 'white',
+                        'padding': '4px 8px',
+                        'borderRadius': '12px',
+                        'fontSize': '12px',
+                        'marginRight': '8px'
+                    }),
+                    html.Span(f"📈 {stock_info.get('type', '')}", style={
+                        'backgroundColor': '#9b59b6',
+                        'color': 'white',
+                        'padding': '4px 8px',
+                        'borderRadius': '12px',
+                        'fontSize': '12px',
+                        'marginRight': '8px'
+                    }),
+                    html.Span(f"💰 {stock_info.get('currency', '')}", style={
+                        'backgroundColor': '#f1c40f',
+                        'color': 'white',
+                        'padding': '4px 8px',
+                        'borderRadius': '12px',
+                        'fontSize': '12px',
+                        'marginRight': '8px'
+                    })
+                ], style={'marginBottom': '10px'}),
+                
+                # 交易时间信息
+                html.P(f"🕐 交易时间: {stock_info.get('market_open', '')}-{stock_info.get('market_close', '')} ({stock_info.get('timezone', '')})", style={
+                    'margin': '5px 0',
+                    'fontSize': '14px',
+                    'color': '#7f8c8d'
+                }),
+                
+                # 市场状态
+                html.Div([
+                    html.Span(f"● {stock_info.get('market_status', {}).get('status_text', '状态未知')}", style={
+                        'color': status_color,
+                        'fontWeight': 'bold',
+                        'marginRight': '10px'
+                    }),
+                    html.Span(stock_info.get('market_status', {}).get('next_event', ''), style={
+                        'color': '#7f8c8d',
+                        'fontSize': '12px'
+                    })
+                ])
+            ])
+        ], style={
+            'backgroundColor': '#f8f9fa',
+            'padding': '15px',
+            'borderRadius': '8px',
+            'border': '1px solid #e9ecef',
+            'marginBottom': '15px'
+        })
+    ])
 
 def create_error_card(error_message: str) -> html.Div:
     """
