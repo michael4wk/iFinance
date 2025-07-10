@@ -1,0 +1,29 @@
+# 开发环境依赖
+# 包含生产环境依赖和开发工具
+
+# 包含生产环境依赖
+-r requirements.txt
+
+# 测试框架
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+
+# 代码格式化
+black>=23.7.0
+isort>=5.12.0
+
+# 代码检查
+flake8>=6.0.0
+mypy>=1.5.0
+
+# 类型检查
+types-requests>=2.31.0
+types-python-dateutil>=2.8.0
+
+# 开发工具
+ipython>=8.14.0
+jupyter>=1.0.0
+
+# 文档生成
+sphinx>=7.1.0

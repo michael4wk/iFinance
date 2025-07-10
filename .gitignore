@@ -1,9 +1,29 @@
 # Python
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
 *.pyo
 *.pyd
+*.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+PIPFILE.lock
 
 # Virtual environment
 virtualenv/
@@ -41,5 +61,34 @@ Thumbs.db
 
 # API keys and sensitive information
 *.env
+.env.local
+.env.development
+.env.test
+.env.production
 config.ini
 secrets.py
+
+# Test files
+test_basic.py
+
+# Coverage and testing
+coverage/
+*.cover
+*.py,cover
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Application specific
+data/
+cache/
+temp/
+tmp/

@@ -1,0 +1,23 @@
+# 生产环境依赖
+# 运行应用所需的核心包
+
+# HTTP请求库
+requests>=2.31.0
+
+# 数据处理库
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Web框架 (选择其一)
+dash>=2.14.0
+dash-mantine-components>=2.1.0
+# streamlit>=1.28.0
+
+# 环境变量管理
+python-dotenv>=1.0.0
+
+# 日期时间处理
+python-dateutil>=2.8.0
+
+# 数据验证
+pydantic>=2.0.0
