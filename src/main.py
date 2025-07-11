@@ -22,6 +22,9 @@ from src.ui.app import create_app
 # 获取主应用日志记录器
 logger = get_logger(__name__)
 
+# 创建全局应用实例供gunicorn使用
+server = None
+
 
 def validate_environment() -> None:
     """
@@ -80,12 +83,23 @@ def run_application(app, debug: bool = False, host: str = None, port: int = None
         host: 服务器主机地址
         port: 服务器端口
     """
-    # 从配置获取默认值
-    host = host or config.get('HOST', '127.0.0.1')
-    port = port or config.get_int('PORT', 8050)
+    global server
+    
+    # 设置全局server变量供gunicorn使用
+    server = app.server
+    
+    # 获取端口配置（支持环境变量PORT）
+    import os
+    host = host or os.environ.get('HOST', config.get('HOST', '127.0.0.1'))
+    port = port or int(os.environ.get('PORT', config.get_int('PORT', 8050)))
+    
+    # 生产环境下禁用调试模式
+    if os.environ.get('ENVIRONMENT') == 'production':
+        debug = False
     
     logger.info(f"Starting iFinance server on {host}:{port}")
     logger.info(f"Debug mode: {'enabled' if debug else 'disabled'}")
+    logger.info(f"Environment: {os.environ.get('ENVIRONMENT', 'development')}")
     
     try:
         # 启动服务器
@@ -101,6 +115,20 @@ def run_application(app, debug: bool = False, host: str = None, port: int = None
     except Exception as e:
         logger.error(f"Application crashed: {str(e)}")
         raise
+
+
+def init_server():
+    """初始化服务器实例供gunicorn使用"""
+    global server
+    if server is None:
+        try:
+            validate_environment()
+            app = setup_application()
+            server = app.server
+        except Exception as e:
+            logger.error(f"服务器初始化失败: {str(e)}")
+            raise
+    return server
 
 
 def main() -> None:
@@ -183,5 +211,20 @@ def main() -> None:
         sys.exit(1)
 
 
+# 在模块级别初始化server变量供gunicorn使用
+try:
+    server = init_server()
+except Exception:
+    # 如果初始化失败，设置为None，稍后再尝试
+    server = None
+
+
 if __name__ == '__main__':
     main()
+else:
+    # 当作为模块导入时，确保server已初始化
+    if server is None:
+        try:
+            server = init_server()
+        except Exception as e:
+            logger.warning(f"模块导入时服务器初始化失败: {str(e)}")

@@ -89,6 +89,60 @@ python test_basic.py
 
 应用将在 `http://127.0.0.1:8050` 启动。
 
+## 云端部署
+
+### Railway 部署
+
+本项目已配置好 Railway 部署文件，支持一键部署到云端。
+
+#### 部署步骤
+
+1. **准备 GitHub 仓库**
+   - Fork 本项目到你的 GitHub 账户
+   - 或将代码推送到你的 GitHub 仓库
+
+2. **注册 Railway 账户**
+   - 访问 [Railway](https://railway.app)
+   - 使用 GitHub 账户注册登录
+
+3. **创建新项目**
+   - 点击 "New Project"
+   - 选择 "Deploy from GitHub repo"
+   - 选择你的 iFinance 仓库
+
+4. **配置环境变量**
+   在 Railway 项目设置中添加以下环境变量：
+   ```
+   ALPHA_VANTAGE_API_KEY=your_api_key_here
+   ENVIRONMENT=production
+   DEBUG=false
+   TZ=Asia/Shanghai
+   ```
+
+5. **部署完成**
+   - Railway 会自动检测 `Procfile` 和 `railway.toml`
+   - 自动安装依赖并启动应用
+   - 获得一个公网访问地址
+
+#### Railway 配置文件
+
+- `Procfile`: 定义应用启动命令
+- `railway.toml`: Railway 专用配置
+- `.env.example`: 环境变量模板
+
+#### 免费额度
+
+- 每月 $5 免费额度
+- 500 小时运行时间
+- 自动休眠优化（无访问时自动暂停）
+
+### 其他部署选项
+
+- **Render**: 类似 Railway 的免费部署平台
+- **Vercel**: 适合静态站点和 Serverless 函数
+- **Heroku**: 需要付费计划
+- **自建服务器**: 使用 Docker 或直接部署
+
 ## 项目结构
 
 ```
