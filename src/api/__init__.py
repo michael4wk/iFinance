@@ -4,7 +4,4 @@
 from .alpha_vantage import AlphaVantageClient
 from .base import BaseAPIClient
 
-__all__ = [
-    'AlphaVantageClient',
-    'BaseAPIClient'
-]
+__all__ = ["AlphaVantageClient", "BaseAPIClient"]
