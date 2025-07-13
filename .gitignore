@@ -89,6 +89,7 @@ cover/
 
 # Application specific
 data/
+!src/data/
 cache/
 temp/
 tmp/
