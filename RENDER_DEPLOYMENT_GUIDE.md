@@ -14,7 +14,9 @@
 ### 步骤2：配置环境变量
 1. 点击您的服务名称进入服务详情页
 2. 在左侧菜单中点击 **"Environment"**
-3. 点击 **"Add Environment Variable"** 按钮
+3. 有两种方式添加环境变量：
+   - **方式一**：点击 **"Add"** 按钮，逐个添加环境变量
+   - **方式二**：点击 **"Add"** 下拉菜单，选择 **"from .env"**，批量导入环境变量
 4. 添加以下环境变量：
 
 #### 必需的环境变量
@@ -26,7 +28,7 @@
 | `DEBUG` | `False` | 生产环境建议设为False |
 | `LOG_LEVEL` | `INFO` | 日志级别 |
 | `HOST` | `0.0.0.0` | 服务器监听地址（Render需要0.0.0.0） |
-| `PORT` | `10000` | 端口号（Render默认使用10000） |
+| `PORT` | `10000` | 端口号（可选，Render会自动分配） |
 | `REQUEST_TIMEOUT` | `30` | API请求超时时间 |
 | `MAX_RETRIES` | `3` | 最大重试次数 |
 | `RETRY_DELAY` | `1` | 重试延迟时间 |
@@ -34,7 +36,23 @@
 #### 重要提醒
 - **ALPHA_VANTAGE_API_KEY** 是最关键的环境变量，没有它应用无法正常工作
 - **HOST** 必须设置为 `0.0.0.0`，这是Render平台的要求
-- **PORT** 建议设置为 `10000`，这是Render的默认端口
+- **PORT** 通常不需要手动设置，Render会自动分配端口并通过 `$PORT` 环境变量提供
+
+#### 使用 .env 文件批量导入（推荐）
+如果您选择使用 "from .env" 方式：
+1. 点击 **"Add"** → **"from .env"**
+2. 将以下内容复制粘贴到文本框中：
+```
+ALPHA_VANTAGE_API_KEY=您的实际API密钥
+ALPHA_VANTAGE_BASE_URL=https://www.alphavantage.co/query
+DEBUG=False
+LOG_LEVEL=INFO
+HOST=0.0.0.0
+REQUEST_TIMEOUT=30
+MAX_RETRIES=3
+RETRY_DELAY=1
+```
+3. 点击 **"Add Variables"** 完成批量导入
 
 ### 步骤3：保存并重新部署
 1. 添加完所有环境变量后，点击 **"Save Changes"**
