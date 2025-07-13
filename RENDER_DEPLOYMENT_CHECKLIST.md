@@ -35,7 +35,7 @@ python3 verify_api_key.py your_api_key_here
 **基本设置：**
 - [ ] Name: `ifinance`
 - [ ] Region: `Oregon (US West)` 或 `Singapore`
-- [ ] Branch: `dev`
+- [ ] Branch: `main`
 - [ ] Root Directory: 留空
 
 **构建设置：**

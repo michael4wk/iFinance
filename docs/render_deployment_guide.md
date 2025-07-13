@@ -72,7 +72,7 @@ Oregon (US West) 或 Singapore（选择离你较近的）
 
 **Branch（分支）**
 ```
-dev
+main
 ```
 
 **Root Directory（根目录）**
@@ -231,7 +231,7 @@ gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 src.main:server
 ### 7.3 自动部署设置
 
 - Render 默认启用自动部署
-- 每次推送到 GitHub 的 `dev` 分支都会触发重新部署
+- 每次推送到 GitHub 的 `main` 分支都会触发重新部署
 - 可以在 **"Settings"** 中调整自动部署设置
 
 ---
