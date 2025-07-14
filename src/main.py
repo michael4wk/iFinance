@@ -122,20 +122,6 @@ def run_application(
         raise
 
 
-def init_server():
-    """初始化服务器实例供gunicorn使用"""
-    global server
-    if server is None:
-        try:
-            validate_environment()
-            app = setup_application()
-            server = app.server
-        except Exception as e:
-            logger.error(f"服务器初始化失败: {str(e)}")
-            raise
-    return server
-
-
 def main() -> None:
     """
     主函数 - 应用程序入口点
@@ -195,20 +181,22 @@ def main() -> None:
         sys.exit(1)
 
 
-# 在模块级别初始化server变量供gunicorn使用
-try:
-    server = init_server()
-except Exception:
-    # 如果初始化失败，设置为None，稍后再尝试
-    server = None
+# 当通过Gunicorn等WSGI服务器启动时，__name__ 不是 '__main__'
+# 在这种情况下，我们需要在模块加载时就初始化应用
+if __name__ != "__main__":
+    try:
+        logger.info("为Gunicorn初始化应用程序...")
+        # 设置并初始化应用
+        app = setup_application()
+        # 将Dash/Flask服务器实例赋值给server变量，供Gunicorn使用
+        server = app.server
+        logger.info("为Gunicorn成功初始化应用程序。")
+    except Exception as e:
+        # 使用 exc_info=True 来记录完整的堆栈跟踪
+        logger.critical(f"为Gunicorn初始化应用程序失败: {e}", exc_info=True)
+        # 退出以防止Gunicorn启动一个错误的应用
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     main()
-else:
-    # 当作为模块导入时，确保server已初始化
-    if server is None:
-        try:
-            server = init_server()
-        except Exception as e:
-            logger.warning(f"模块导入时服务器初始化失败: {str(e)}")
