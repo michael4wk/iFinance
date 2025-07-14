@@ -4,6 +4,7 @@
 from datetime import datetime
 
 import dash
+import dash_iconify
 import dash_mantine_components as dmc
 import pandas as pd
 from dash import Input, Output, State, dcc, html
@@ -53,6 +54,8 @@ def create_layout() -> html.Div:
     """
     return dmc.MantineProvider(
         [
+            # 用于显示通知
+            html.Div(id="notification-container"),
             # 存储选中股票的详细信息
             dcc.Store(id="selected-stock-info", data={}),
             html.Div(
@@ -272,48 +275,49 @@ def register_callbacks(app: dash.Dash) -> None:
             Output("stock-dropdown", "options"),
             Output("stock-dropdown", "value"),
             Output("selected-stock-info", "data"),
+            Output("notification-container", "children"),
         ],
         [Input("search-button", "n_clicks")],
         [State("stock-search-input", "value")],
+        prevent_initial_call=True,
     )
     def update_stock_dropdown(n_clicks, search_value):
         """
         更新股票下拉选择框并存储搜索结果
         """
-        if n_clicks == 0 or not search_value:
-            return [], None, {}
+        if not search_value:
+            return [], None, {}, None
 
         try:
-            # 验证搜索关键词
             validated_keywords = data_validator.validate_search_keywords(search_value)
-
-            # 搜索股票
             search_results = api_client.search_symbols(validated_keywords)
-
-            # 处理搜索结果
             processed_results = data_processor.process_symbol_search_results(
                 search_results
             )
 
-            # 生成下拉选项和股票信息映射
-            options = []
-            stock_info_map = {}
+            options = [
+                {"label": r["display_label"], "value": r["symbol"]}
+                for r in processed_results[:10]
+            ]
+            stock_info_map = {
+                r["symbol"]: r for r in processed_results[:10]
+            }
 
-            for result in processed_results[:10]:  # 限制显示前10个结果
-                options.append(
-                    {"label": result["display_label"], "value": result["symbol"]}
-                )
-                # 存储完整的股票信息
-                stock_info_map[result["symbol"]] = result
-
-            # 自动选择第一个结果
             default_value = options[0]["value"] if options else None
-
-            return options, default_value, stock_info_map
+            return options, default_value, stock_info_map, None
 
         except Exception as e:
-            logger.error(f"Stock search failed: {str(e)}")
-            return [], None, {}
+            logger.error(f"股票搜索失败: {e}", exc_info=True)
+            error_message = f"搜索时发生错误: {e}"
+            notification = dmc.Notification(
+                title="错误",
+                id="error-notification",
+                action="show",
+                message=error_message,
+                color="red",
+                icon=dash_iconify.DashIconify(icon="ic:round-error"),
+            )
+            return [], None, {}, notification
 
     @app.callback(
         Output("fetch-data-button", "disabled"), [Input("stock-dropdown", "value")]
@@ -359,17 +363,36 @@ def register_callbacks(app: dash.Dash) -> None:
             return None
 
         try:
-            # 统一使用 'full' 模式获取调整后的日线数据
-            output_size = "full"
-            logger.info(f"统一使用 {output_size} 模式获取调整后的日线数据")
+            # 智能选择输出大小：根据选择的日期决定使用compact还是full
+            from datetime import datetime
 
-            # 获取调整后的日线数据
-            daily_data = api_client.get_daily_adjusted_data(
-                selected_stock, outputsize=output_size
-            )
+            # 计算选择日期距今的天数
+            if selected_date:
+                target_date = pd.to_datetime(selected_date)
+                days_diff = (datetime.now() - target_date).days
 
-            # 处理数据，不限制天数
-            df = data_processor.process_daily_data(daily_data, days_limit=None)
+                # 如果选择的日期超过80天前，使用full模式获取完整历史数据
+                if days_diff > 80:
+                    output_size = "full"
+                    logger.info(
+                        f"选择日期距今{days_diff}天，使用full模式获取完整历史数据"
+                    )
+                else:
+                    output_size = "compact"
+                    logger.info(
+                        f"选择日期距今{days_diff}天，使用compact模式获取近期数据"
+                    )
+            else:
+                # 未选择日期时，默认使用compact模式
+                output_size = "compact"
+                logger.info("未选择日期，使用compact模式获取近期数据")
+
+            # 获取日线数据
+            daily_data = api_client.get_daily_data(selected_stock, output_size)
+
+            # 处理数据：当使用full模式时不限制天数，compact模式时限制100天
+            days_limit = None if output_size == "full" else 100
+            df = data_processor.process_daily_data(daily_data, days_limit=days_limit)
 
             # 获取货币符号
             currency_symbol = "$"  # 默认美元符号
