@@ -198,6 +198,68 @@ class AlphaVantageClient(BaseAPIClient):
             }
 
             # 格式化时间序列数据
+
+    def get_daily_adjusted_data(
+        self, symbol: str, outputsize: str = "full"
+    ) -> Dict[str, Any]:
+        """
+        获取股票的调整后日线OHLCV数据
+
+        Args:
+            symbol: 股票代码
+            outputsize: 输出大小, 'compact' 或 'full'
+
+        Returns:
+            Dict[str, Any]: 包含元数据和时间序列数据的字典
+
+        Raises:
+            APIError: 当API调用失败时
+        """
+        if not symbol or not symbol.strip():
+            raise ValueError("Symbol cannot be empty")
+
+        if outputsize not in ["compact", "full"]:
+            raise ValueError("outputsize must be 'compact' or 'full'")
+
+        params = self._add_api_key(
+            {
+                "function": "TIME_SERIES_DAILY_ADJUSTED",
+                "symbol": symbol.strip().upper(),
+                "outputsize": outputsize,
+            }
+        )
+
+        self.logger.info(
+            f"Getting daily adjusted data for symbol: {symbol} (outputsize: {outputsize})"
+        )
+
+        try:
+            response = self.get("", params=params)
+
+            if "Time Series (Daily)" not in response:
+                if "Meta Data" not in response:
+                    raise APIError(f"Invalid response format for symbol '{symbol}'")
+                else:
+                    raise APIError(f"No daily adjusted data found for symbol '{symbol}'")
+
+            meta_data = response.get("Meta Data", {})
+            time_series = response.get("Time Series (Daily)", {})
+
+            formatted_meta = {
+                "information": meta_data.get("1. Information", ""),
+                "symbol": meta_data.get("2. Symbol", ""),
+                "last_refreshed": meta_data.get("3. Last Refreshed", ""),
+                "output_size": meta_data.get("4. Output Size", ""),
+                "time_zone": meta_data.get("5. Time Zone", ""),
+            }
+
+            return {"meta_data": formatted_meta, "time_series": time_series}
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to get daily adjusted data for '{symbol}': {str(e)}"
+            )
+            raise
             formatted_data = {}
             for date, values in time_series.items():
                 formatted_data[date] = {

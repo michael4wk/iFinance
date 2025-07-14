@@ -359,36 +359,17 @@ def register_callbacks(app: dash.Dash) -> None:
             return None
 
         try:
-            # 智能选择输出大小：根据选择的日期决定使用compact还是full
-            from datetime import datetime
+            # 统一使用 'full' 模式获取调整后的日线数据
+            output_size = "full"
+            logger.info(f"统一使用 {output_size} 模式获取调整后的日线数据")
 
-            # 计算选择日期距今的天数
-            if selected_date:
-                target_date = pd.to_datetime(selected_date)
-                days_diff = (datetime.now() - target_date).days
+            # 获取调整后的日线数据
+            daily_data = api_client.get_daily_adjusted_data(
+                selected_stock, outputsize=output_size
+            )
 
-                # 如果选择的日期超过80天前，使用full模式获取完整历史数据
-                if days_diff > 80:
-                    output_size = "full"
-                    logger.info(
-                        f"选择日期距今{days_diff}天，使用full模式获取完整历史数据"
-                    )
-                else:
-                    output_size = "compact"
-                    logger.info(
-                        f"选择日期距今{days_diff}天，使用compact模式获取近期数据"
-                    )
-            else:
-                # 未选择日期时，默认使用compact模式
-                output_size = "compact"
-                logger.info("未选择日期，使用compact模式获取近期数据")
-
-            # 获取日线数据
-            daily_data = api_client.get_daily_data(selected_stock, output_size)
-
-            # 处理数据：当使用full模式时不限制天数，compact模式时限制100天
-            days_limit = None if output_size == "full" else 100
-            df = data_processor.process_daily_data(daily_data, days_limit=days_limit)
+            # 处理数据，不限制天数
+            df = data_processor.process_daily_data(daily_data, days_limit=None)
 
             # 获取货币符号
             currency_symbol = "$"  # 默认美元符号
