@@ -23,6 +23,10 @@ class Config:
     """
 
     def __init__(self, env_file: Optional[str] = None):
+        # 调试：打印关键环境变量
+        print(f"[DEBUG] ALPHA_VANTAGE_API_KEY in os.environ: {os.environ.get('ALPHA_VANTAGE_API_KEY')}")
+        print(f"[DEBUG] ENVIRONMENT in os.environ: {os.environ.get('ENVIRONMENT')}")
+        print(f"[DEBUG] RENDER in os.environ: {os.environ.get('RENDER')}")
         """
         初始化配置管理器
 
