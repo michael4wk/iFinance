@@ -12,6 +12,7 @@ pandas>=2.0.0
 numpy>=1.24.0
 
 # Web框架 (选择其一)
+flask>=2.3.0
 dash>=2.14.0
 dash-mantine-components>=2.1.0
 # streamlit>=1.28.0
