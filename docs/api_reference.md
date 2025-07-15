@@ -82,9 +82,10 @@ https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=AAPL&apikey=
 
 ### API限制
 
-- **免费版本**: 每分钟5次请求，每天500次请求
+- **免费版本**: 每天25次请求
 - **请求频率**: 建议在请求之间添加适当的延迟
 - **错误处理**: 需要处理API限流、网络错误等异常情况
+- **升级选项**: 如需更多请求次数，可考虑升级到付费版本
 
 ### 错误响应
 
@@ -100,6 +101,6 @@ https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=AAPL&apikey=
 
 ```json
 {
-    "Note": "Thank you for using Alpha Vantage! Our standard API call frequency is 5 calls per minute..."
+    "Note": "Thank you for using Alpha Vantage! Our standard API rate limit is 25 requests per day. Please subscribe to any of the premium plans at https://www.alphavantage.co/premium/ to instantly remove all daily rate limits."
 }
 ```

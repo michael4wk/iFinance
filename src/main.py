@@ -208,26 +208,22 @@ def get_server():
     return server
 
 # 为gunicorn提供server实例
-# 使用简单的延迟初始化
-def _get_or_create_server():
-    """获取或创建server实例"""
-    global _cached_server
-    if '_cached_server' not in globals() or _cached_server is None:
-        try:
-            _cached_server = get_server()
-        except Exception as e:
-            logger.error(f"Server初始化失败: {str(e)}")
-            # 创建一个基本的Flask应用作为fallback
-            from flask import Flask
-            _cached_server = Flask(__name__)
-            _cached_server.route('/')(lambda: 'Server initialization failed')
-    return _cached_server
-
-# 初始化全局变量
-_cached_server = None
-
-# 为gunicorn提供server实例
-server = _get_or_create_server()
+# 在模块级别创建server实例，确保回调函数正确注册
+try:
+    # 直接初始化应用，确保所有组件正确加载
+    validate_environment()
+    app = create_app()
+    server = app.server
+    logger.info("Server instance created successfully for gunicorn")
+except Exception as e:
+    logger.error(f"Failed to create server instance: {str(e)}")
+    # 创建一个基本的Flask应用作为fallback
+    from flask import Flask
+    server = Flask(__name__)
+    
+    @server.route('/')
+    def health_check():
+        return f'Server initialization failed: {str(e)}', 500
 
 if __name__ == "__main__":
     main()

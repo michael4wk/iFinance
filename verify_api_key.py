@@ -8,12 +8,17 @@ Alpha Vantage API Key 验证脚本
 
 import os
 import sys
-import requests
+import urllib.request
+import urllib.parse
+import json
 from pathlib import Path
 
 # 添加项目根目录到Python路径
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
+
+# 导入项目配置系统
+from src.utils.config import config
 
 try:
     from dotenv import load_dotenv
@@ -33,7 +38,7 @@ def verify_api_key(api_key: str = None) -> bool:
         bool: API Key是否有效
     """
     if not api_key:
-        api_key = os.getenv('ALPHA_VANTAGE_API_KEY')
+        api_key = config.get('ALPHA_VANTAGE_API_KEY')
     
     if not api_key:
         print("❌ 未找到 ALPHA_VANTAGE_API_KEY 环境变量")
@@ -52,10 +57,14 @@ def verify_api_key(api_key: str = None) -> bool:
     
     try:
         print("📡 发送测试请求...")
-        response = requests.get(test_url, params=params, timeout=10)
-        response.raise_for_status()
+        # 构建完整的URL
+        query_string = urllib.parse.urlencode(params)
+        full_url = f"{test_url}?{query_string}"
         
-        data = response.json()
+        # 发送请求
+        with urllib.request.urlopen(full_url, timeout=10) as response:
+            response_text = response.read().decode('utf-8')
+            data = json.loads(response_text)
         
         # 检查响应内容
         if 'Error Message' in data:
@@ -87,11 +96,14 @@ def verify_api_key(api_key: str = None) -> bool:
             print(f"📄 响应内容: {data}")
             return False
             
-    except requests.exceptions.Timeout:
-        print("❌ 请求超时，请检查网络连接")
+    except urllib.error.URLError as e:
+        if hasattr(e, 'reason'):
+            print(f"❌ 网络请求失败: {e.reason}")
+        else:
+            print(f"❌ 网络请求失败: {e}")
         return False
-    except requests.exceptions.RequestException as e:
-        print(f"❌ 网络请求失败: {e}")
+    except json.JSONDecodeError as e:
+        print(f"❌ 响应解析失败: {e}")
         return False
     except Exception as e:
         print(f"❌ 验证过程出错: {e}")

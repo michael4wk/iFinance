@@ -7,24 +7,20 @@
 import os
 import sys
 import requests
-from datetime import datetime, timedelta
 import json
+from datetime import datetime, timedelta
+from pathlib import Path
 
-# 添加项目路径
-sys.path.append('/Users/michael/Documents/Code/Trae/iFinance/src')
+# 添加项目根目录到Python路径
+project_root = Path(__file__).parent
+sys.path.insert(0, str(project_root))
+
+# 导入项目配置系统
+from src.utils.config import config
 
 def get_alpha_vantage_api_key():
     """获取Alpha Vantage API密钥"""
-    try:
-        with open('/Users/michael/Documents/Code/Trae/iFinance/.env', 'r') as f:
-            for line in f:
-                if line.startswith('ALPHA_VANTAGE_API_KEY='):
-                    return line.split('=', 1)[1].strip().strip('"\'')
-    except FileNotFoundError:
-        pass
-    
-    # 从环境变量获取
-    return os.getenv('ALPHA_VANTAGE_API_KEY')
+    return config.get('ALPHA_VANTAGE_API_KEY')
 
 def test_intraday_adjusted_data(symbol, date_str, api_key):
     """测试intraday API的adjusted参数"""

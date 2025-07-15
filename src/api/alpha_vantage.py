@@ -109,12 +109,21 @@ class AlphaVantageClient(BaseAPIClient):
         )
 
         self.logger.info(f"Searching symbols for keywords: {keywords}")
+        self.logger.info(f"Request params: {params}")
 
         try:
             response = self.get("", params=params)
+            
+            # 详细记录API响应内容
+            self.logger.info(f"Raw API response for '{keywords}': {response}")
+            self.logger.info(f"Response type: {type(response)}")
+            self.logger.info(f"Response keys: {list(response.keys()) if isinstance(response, dict) else 'Not a dict'}")
 
             # 提取搜索结果
             best_matches = response.get("bestMatches", [])
+            self.logger.info(f"bestMatches content for '{keywords}': {best_matches}")
+            self.logger.info(f"bestMatches type: {type(best_matches)}")
+            self.logger.info(f"bestMatches length: {len(best_matches) if isinstance(best_matches, list) else 'Not a list'}")
 
             # 格式化结果
             results = []
@@ -133,6 +142,7 @@ class AlphaVantageClient(BaseAPIClient):
                 results.append(result)
 
             self.logger.info(f"Found {len(results)} symbol matches for '{keywords}'")
+            self.logger.info(f"Formatted results: {results}")
             return results
 
         except Exception as e:

@@ -12,6 +12,7 @@ from ..api.alpha_vantage import AlphaVantageClient
 from ..data.processor import DataProcessor
 from ..data.validator import DataValidator
 from ..utils.logger import get_logger
+from ..utils.exceptions import APIRateLimitError
 
 # 获取日志记录器
 logger = get_logger(__name__)
@@ -137,6 +138,11 @@ def create_layout() -> html.Div:
                                                     "marginBottom": "20px",
                                                     "width": "100%",
                                                 },
+                                            ),
+                                            # 错误信息容器
+                                            html.Div(
+                                                id="error-container",
+                                                style={"marginBottom": "15px"},
                                             ),
                                             # 股票信息卡片
                                             html.Div(
@@ -272,6 +278,7 @@ def register_callbacks(app: dash.Dash) -> None:
             Output("stock-dropdown", "options"),
             Output("stock-dropdown", "value"),
             Output("selected-stock-info", "data"),
+            Output("error-container", "children"),
         ],
         [Input("search-button", "n_clicks")],
         [State("stock-search-input", "value")],
@@ -281,7 +288,7 @@ def register_callbacks(app: dash.Dash) -> None:
         更新股票下拉选择框并存储搜索结果
         """
         if n_clicks == 0 or not search_value:
-            return [], None, {}
+            return [], None, {}, None
 
         try:
             # 验证搜索关键词
@@ -309,11 +316,16 @@ def register_callbacks(app: dash.Dash) -> None:
             # 自动选择第一个结果
             default_value = options[0]["value"] if options else None
 
-            return options, default_value, stock_info_map
+            return options, default_value, stock_info_map, None
 
+        except APIRateLimitError as e:
+            error_message = "API频率限制已达到。Alpha Vantage免费API每天限制25次请求，请稍后再试或升级到高级账户。"
+            logger.error(f"API rate limit exceeded: {str(e)}")
+            return [], None, {}, create_error_card(error_message)
+            
         except Exception as e:
             logger.error(f"Stock search failed: {str(e)}")
-            return [], None, {}
+            return [], None, {}, None
 
     @app.callback(
         Output("fetch-data-button", "disabled"), [Input("stock-dropdown", "value")]
@@ -482,6 +494,11 @@ def register_callbacks(app: dash.Dash) -> None:
                     ]
                 )
 
+        except APIRateLimitError as e:
+            error_message = "API频率限制已达到。Alpha Vantage免费API每天限制25次请求，请稍后再试或升级到高级账户。"
+            logger.error(f"API rate limit exceeded: {str(e)}")
+            return create_error_card(error_message)
+            
         except Exception as e:
             logger.error(f"Failed to fetch stock data: {str(e)}")
             return create_error_card(str(e))

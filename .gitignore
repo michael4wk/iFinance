@@ -57,7 +57,10 @@ Thumbs.db
 # Financial data
 *.csv
 *.xlsx
+# 排除所有JSON文件，但保留必要的配置文件
 *.json
+!package.json
+!tsconfig.json
 
 # API keys and sensitive information
 *.env
@@ -88,8 +91,8 @@ cover/
 .ipynb_checkpoints
 
 # Application specific
-data/
-!src/data/
-cache/
-temp/
-tmp/
+/data/
+!/src/data/
+/cache/
+/temp/
+/tmp/
