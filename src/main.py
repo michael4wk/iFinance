@@ -208,23 +208,26 @@ def get_server():
     return server
 
 # 为gunicorn提供server实例
-# 使用模块级别的懒加载
-class LazyServer:
-    def __init__(self):
-        self._server = None
-    
-    def __getattr__(self, name):
-        if self._server is None:
-            self._server = get_server()
-        return getattr(self._server, name)
-    
-    def __call__(self, *args, **kwargs):
-        if self._server is None:
-            self._server = get_server()
-        return self._server(*args, **kwargs)
+# 使用简单的延迟初始化
+def _get_or_create_server():
+    """获取或创建server实例"""
+    global _cached_server
+    if '_cached_server' not in globals() or _cached_server is None:
+        try:
+            _cached_server = get_server()
+        except Exception as e:
+            logger.error(f"Server初始化失败: {str(e)}")
+            # 创建一个基本的Flask应用作为fallback
+            from flask import Flask
+            _cached_server = Flask(__name__)
+            _cached_server.route('/')(lambda: 'Server initialization failed')
+    return _cached_server
 
-# 创建懒加载的server实例
-server = LazyServer()
+# 初始化全局变量
+_cached_server = None
+
+# 为gunicorn提供server实例
+server = _get_or_create_server()
 
 if __name__ == "__main__":
     main()
