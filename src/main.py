@@ -195,20 +195,20 @@ def main() -> None:
         sys.exit(1)
 
 
-# 在模块级别初始化server变量供gunicorn使用
-try:
-    server = init_server()
-except Exception:
-    # 如果初始化失败，设置为None，稍后再尝试
-    server = None
-
-
-if __name__ == "__main__":
-    main()
-else:
-    # 当作为模块导入时，确保server已初始化
+# 延迟初始化server变量供gunicorn使用
+def get_server():
+    """获取server实例，延迟初始化"""
+    global server
     if server is None:
         try:
             server = init_server()
         except Exception as e:
-            logger.warning(f"模块导入时服务器初始化失败: {str(e)}")
+            logger.error(f"服务器初始化失败: {str(e)}")
+            raise
+    return server
+
+# 为gunicorn提供server实例
+server = get_server()
+
+if __name__ == "__main__":
+    main()
