@@ -1,5 +1,6 @@
 # 配置管理工具
 # 提供配置加载和验证功能
+# 修复版本：在Render环境中优先使用环境变量
 
 import os
 from pathlib import Path
@@ -18,6 +19,7 @@ class Config:
     配置管理类
 
     负责加载环境变量和提供配置访问接口
+    在Render环境中优先使用环境变量
     """
 
     def __init__(self, env_file: Optional[str] = None):
@@ -28,11 +30,32 @@ class Config:
             env_file: 环境变量文件路径，默认为项目根目录的.env文件
         """
         self._loaded = False
+        self._is_render_env = self._detect_render_environment()
         self.load_env(env_file)
+
+    def _detect_render_environment(self) -> bool:
+        """
+        检测是否在Render环境中运行
+        
+        Returns:
+            bool: 是否在Render环境中
+        """
+        # 检查Render特有的环境变量或域名
+        render_indicators = [
+            os.getenv('RENDER') is not None,
+            os.getenv('RENDER_SERVICE_ID') is not None,
+            os.getenv('RENDER_SERVICE_NAME') is not None,
+            'onrender.com' in os.getenv('RENDER_EXTERNAL_URL', ''),
+            os.getenv('ENVIRONMENT') == 'production'
+        ]
+        
+        return any(render_indicators)
 
     def load_env(self, env_file: Optional[str] = None) -> None:
         """
         加载环境变量文件
+        
+        在Render环境中，不覆盖现有环境变量
 
         Args:
             env_file: 环境变量文件路径
@@ -47,7 +70,9 @@ class Config:
             env_file = project_root / "config" / ".env"
 
         if Path(env_file).exists():
-            load_dotenv(env_file, override=True)  # 强制覆盖现有环境变量
+            # 在Render环境中，不覆盖现有环境变量
+            override = not self._is_render_env
+            load_dotenv(env_file, override=override)
             self._loaded = True
 
     def get(
@@ -129,6 +154,16 @@ class Config:
             raise ConfigurationError(
                 f"Missing required configurations: {', '.join(missing_keys)}"
             )
+
+    @property
+    def is_render_environment(self) -> bool:
+        """
+        检查是否在Render环境中
+        
+        Returns:
+            bool: 是否在Render环境中
+        """
+        return self._is_render_env
 
     @property
     def is_loaded(self) -> bool:
