@@ -208,7 +208,23 @@ def get_server():
     return server
 
 # 为gunicorn提供server实例
-server = get_server()
+# 使用模块级别的懒加载
+class LazyServer:
+    def __init__(self):
+        self._server = None
+    
+    def __getattr__(self, name):
+        if self._server is None:
+            self._server = get_server()
+        return getattr(self._server, name)
+    
+    def __call__(self, *args, **kwargs):
+        if self._server is None:
+            self._server = get_server()
+        return self._server(*args, **kwargs)
+
+# 创建懒加载的server实例
+server = LazyServer()
 
 if __name__ == "__main__":
     main()
