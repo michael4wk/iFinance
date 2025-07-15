@@ -1,0 +1,22 @@
+# Render部署配置文件
+# 明确指定服务配置以确保正确部署
+
+services:
+  - type: web
+    name: ifinance
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 src.main:server
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: RENDER
+        value: true
+      - key: ENVIRONMENT
+        value: production
+      - key: ALPHA_VANTAGE_API_KEY
+        sync: false  # 从Render环境变量中获取
+    healthCheckPath: /
+    autoDeploy: true
+    branch: dev
