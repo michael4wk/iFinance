@@ -195,28 +195,17 @@ def main() -> None:
         sys.exit(1)
 
 
-# 延迟初始化server变量供gunicorn使用
-def get_server():
-    """获取server实例，延迟初始化"""
-    global server
-    if server is None:
-        try:
-            server = init_server()
-        except Exception as e:
-            logger.error(f"服务器初始化失败: {str(e)}")
-            raise
-    return server
-
 # 为gunicorn提供server实例
-# 在模块级别创建server实例，确保回调函数正确注册
+# 简化的初始化逻辑，确保在导入时正确创建应用
 try:
-    # 直接初始化应用，确保所有组件正确加载
+    logger.info("Initializing server for gunicorn...")
     validate_environment()
     app = create_app()
     server = app.server
     logger.info("Server instance created successfully for gunicorn")
 except Exception as e:
     logger.error(f"Failed to create server instance: {str(e)}")
+    logger.error(f"Traceback: {traceback.format_exc()}")
     # 创建一个基本的Flask应用作为fallback
     from flask import Flask
     server = Flask(__name__)
